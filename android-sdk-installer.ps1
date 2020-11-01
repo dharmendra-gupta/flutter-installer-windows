@@ -1,4 +1,4 @@
-﻿$sdk_mgr_path = "$env:ANDROID_SDK_ROOT\cmdline-tools\latest\bin"
+﻿$sdk_mgr_path = [System.Environment]::GetEnvironmentVariable("ANDROID_SDK_ROOT",[System.EnvironmentVariableTarget]::User) + "\cmdline-tools\latest\bin"
 $a = Invoke-Command { &  $sdk_mgr_path\sdkmanager.bat --list | Where {$_ -match "build-tools"}}
 $buildtools_latest = $a.Get($a.Length-1).split("|").Get(0).Trim()
 $a = Invoke-Command { &  $sdk_mgr_path\sdkmanager.bat --list | Where {$_ -match "platforms" }}
