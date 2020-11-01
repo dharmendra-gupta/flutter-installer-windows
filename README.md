@@ -1,4 +1,4 @@
-``Flutter Installer Windows`` set *beautiful* minimal powershell scripts.
+``Flutter Installer Windows`` set of *beautiful* powershell scripts.
 ======================================================================
 *One command install Flutter with Adopt OpenJDK8 and Android SDK*
 
