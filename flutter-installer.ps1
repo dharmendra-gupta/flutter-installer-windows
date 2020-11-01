@@ -37,6 +37,7 @@ Write-Output "Configuring OpenJDK8 for current User: $env:USERNAME"
 $java_home = (Get-ChildItem -LiteralPath $installation_path -Directory).FullName | Where {$_ -match "jdk"}
 $path = [System.Environment]::GetEnvironmentVariable("PATH",[System.EnvironmentVariableTarget]::User) + "$java_home\bin;" + "$installation_path\flutter\bin;"
 [System.Environment]::SetEnvironmentVariable('JAVA_HOME',$java_home,[System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable('FLUTTER_HOME', "$installation_path\flutter" ,[System.EnvironmentVariableTarget]::User)
 [System.Environment]::SetEnvironmentVariable('PATH',$path,[System.EnvironmentVariableTarget]::User)
 Write-Output "Configuration Complete, OpenJDK8 for current User: $env:USERNAME"
 
