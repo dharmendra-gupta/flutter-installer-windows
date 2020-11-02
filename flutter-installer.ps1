@@ -34,11 +34,15 @@ Write-Output "Extracting OpenJDK8 at $installation_path, Please Wait..."
 Invoke-Command { & .\7za.exe x "OpenJDK8U-jdk_x64_windows_hotspot.zip" -y -o"$installation_path" | Out-Null }
 Write-Output "Extraction Complete, OpenJDK8 at $installation_path. "
 Write-Output "Configuring OpenJDK8 for current User: $env:USERNAME"
+# set java home for user and for current process
 $java_home = (Get-ChildItem -LiteralPath $installation_path -Directory).FullName | Where {$_ -match "jdk"}
-$path = [System.Environment]::GetEnvironmentVariable("PATH",[System.EnvironmentVariableTarget]::User) + "$java_home\bin;" + "$installation_path\flutter\bin;"
 [System.Environment]::SetEnvironmentVariable('JAVA_HOME',$java_home,[System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable('FLUTTER_HOME', "$installation_path\flutter" ,[System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable('JAVA_HOME',$java_home,[System.EnvironmentVariableTarget]::Process)
+# set jdk and flutter path for user and for current process
+$path = [System.Environment]::GetEnvironmentVariable("PATH",[System.EnvironmentVariableTarget]::User) + "$java_home\bin;" + "$installation_path\flutter\bin;"
 [System.Environment]::SetEnvironmentVariable('PATH',$path,[System.EnvironmentVariableTarget]::User)
+$path_for_process = [System.Environment]::GetEnvironmentVariable("PATH",[System.EnvironmentVariableTarget]::Process)+ "$java_home\bin;" + "$installation_path\flutter\bin;"
+[System.Environment]::SetEnvironmentVariable('PATH',$path_for_process,[System.EnvironmentVariableTarget]::Process)
 Write-Output "Configuration Complete, OpenJDK8 for current User: $env:USERNAME"
 
 # Downloading Android CLI Tools and Android SDk
@@ -52,17 +56,27 @@ New-Item "$android_sdk\cmdline-tools" -ItemType "directory" -Force | Out-Null
 Move-Item -LiteralPath "$pwd\latest" -Destination "$android_sdk\cmdline-tools"
 Write-Output "Extraction Complete, Android CLI tools at $installation_path. "
 Write-Output "Configuring Android SDK for current User: $env:USERNAME"
+# set android sdk path for user and for current process
 [System.Environment]::SetEnvironmentVariable('ANDROID_SDK_ROOT', $android_sdk ,[System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable('ANDROID_SDK_ROOT',$android_sdk,[System.EnvironmentVariableTarget]::Process)
 Write-Output "Installing Android SDK, Please Wait..."
 Write-Host "Please accept licence when prompt..." -BackgroundColor Red
 pause
-Invoke-Command { & .\android-sdk-installer.ps1 }
-Invoke-Command { & .\config-flutter.ps1 }
+$sdk_mgr_path = [System.Environment]::GetEnvironmentVariable("ANDROID_SDK_ROOT",[System.EnvironmentVariableTarget]::User) + "\cmdline-tools\latest\bin"
+$a = Invoke-Command { &  $sdk_mgr_path\sdkmanager.bat --list | Where {$_ -match "build-tools"}}
+$buildtools_latest = $a.Get($a.Length-1).split("|").Get(0).Trim()
+$a = Invoke-Command { &  $sdk_mgr_path\sdkmanager.bat --list | Where {$_ -match "platforms" }}
+$b = $a.ForEach({$_.split("|").Get(0).trim() -replace "platforms;android-", ""})  | sort { [int]($_ -replace '\D')}
+$platforms_version = $b.Get($b.Length-1)
+Invoke-Command { & $sdk_mgr_path\sdkmanager.bat "platform-tools" }
+Invoke-Command { & $sdk_mgr_path\sdkmanager.bat "$buildtools_latest" }
+Invoke-Command { & $sdk_mgr_path\sdkmanager.bat "platforms;android-$platforms_version"  }
+Write-Output "Android SDK installed successfully at $env:ANDROID_SDK_ROOT"
+Invoke-Command { &  flutter doctor --android-licenses }
+Invoke-Command { &  flutter doctor }
 Write-Output "Cleaning up temporary files..."
 Remove-Item "$pwd\*.zip" -Force
 Remove-Item "$pwd\*.txt" -Force
 Remove-Item "$pwd\7*" -Force
 Write-Output "Cleaning done."
-
-
 Write-Host "Congratulations Flutter Setup Done with OpenJDK8 and Android SDK." -BackgroundColor Green
